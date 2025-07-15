@@ -1,4 +1,4 @@
-# Open OnDemand LLM Passenger App
+# RufusAI Passenger App
 
 This repository contains a small [Next.js](https://nextjs.org/) passenger app used to provide a web front end for a running [LLaMA.cpp](https://github.com/ggerganov/llama.cpp) server. It is designed to be deployed on [Open OnDemand](https://openondemand.org/) so users can launch interactive LLM sessions through a browser.
 
