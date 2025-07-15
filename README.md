@@ -41,6 +41,7 @@ Several environment variables control how the Slurm job is launched. All have sa
 | `SLURM_PARTITION` | `gpu` | Slurm partition used when submitting the job |
 | `GPU_TYPE` | `gpu:1` | `--gres` value specifying the GPU resource requirement |
 | `PASSENGER_BASE_URI` | `/` | Base URI where the app is mounted |
+| `LLAMA_SERVER_URL` | *(empty)* | Connect to an existing `llama.cpp` server instead of launching one |
 | `LLAMA_CPP_BIN` | `/path/to/llama.cpp/server` | Path to the `llama.cpp` server executable |
 | `MODEL` | `/path/to/models/llama-7b.gguf` | GGUF model file to load |
 | `LLAMA_ARGS` | *(empty)* | Extra command line arguments passed to `llama.cpp` |
@@ -55,6 +56,7 @@ export LLAMA_CPP_BIN=/software/llama.cpp/server
 export MODEL=/software/models/llama-7b.gguf
 export LLAMA_ARGS="--n-gpu-layers 40"
 export LLAMA_SERVER_PORT=8001
+export LLAMA_SERVER_URL=http://login.example.com:8001
 ```
 
 ### Build-time environment injection

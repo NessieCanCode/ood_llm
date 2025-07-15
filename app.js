@@ -96,9 +96,14 @@ app.prepare().then(() => {
   server.post(`${baseUri}launch`, async (req, res) => {
     const sid = req.sessionID;
     const info = sessionJobs[sid];
-    if (info && info.jobId) {
+    if (info && (info.jobId || info.url)) {
       startTimer(sid);
-      return res.json({ jobId: info.jobId });
+      return res.json({ jobId: info.jobId || null });
+    }
+    if (config.llamaServerUrl) {
+      sessionJobs[sid] = { url: config.llamaServerUrl };
+      startTimer(sid);
+      return res.json({ jobId: null });
     }
     try {
       const jobId = await launchSlurmJob();
