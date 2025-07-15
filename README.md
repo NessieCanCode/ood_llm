@@ -51,6 +51,7 @@ Several environment variables control how the Slurm job is launched. All have sa
 | `GPU_TYPE` | `gpu:1` | `--gres` value specifying the GPU resource requirement |
 | `LLAMA_ARGS` | *(empty)* | Extra command line arguments passed to `llama.cpp` |
 | `LLAMA_SERVER_PORT` | `8000` | Port the server listens on |
+| `SESSION_TIMEOUT` | `600` | Seconds of inactivity before the job is cancelled |
 
 These can be set in your shell before launching the app:
 ```bash

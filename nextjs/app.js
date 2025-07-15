@@ -3,6 +3,9 @@ const next    = require('next');
 const { spawn } = require('child_process');
 const path = require('path');
 const { createProxyMiddleware } = require('http-proxy-middleware');
+const session = require('express-session');
+
+const log = require('./logger');
 
 const config = require('./config');
 
@@ -11,6 +14,7 @@ const app = next({ dev });
 const handle = app.getRequestHandler();
 
 const baseUri = config.baseUri;
+const sessionJobs = {};
 
 async function launchSlurmJob() {
   return new Promise((resolve, reject) => {
@@ -37,7 +41,24 @@ async function launchSlurmJob() {
   });
 }
 
-function pollForNode(jobId) {
+function startTimer(sid) {
+  const info = sessionJobs[sid];
+  if (!info) return;
+  if (info.timer) clearTimeout(info.timer);
+  info.timer = setTimeout(() => cancelJob(sid), config.sessionTimeout * 1000);
+}
+
+function cancelJob(sid) {
+  const info = sessionJobs[sid];
+  if (info && info.jobId) {
+    spawn('scancel', [info.jobId]);
+    log(`Cancelled job ${info.jobId} for session ${sid}`);
+  }
+  if (info && info.timer) clearTimeout(info.timer);
+  delete sessionJobs[sid];
+}
+
+function pollForNode(jobId, cb) {
   let interval;
   const check = () => {
     const squeue = spawn('squeue', ['-j', jobId, '-h', '-o', '%B']);
@@ -47,9 +68,11 @@ function pollForNode(jobId) {
       if (code === 0) {
         const node = out.trim();
         if (node) {
-          llamaUrl = `http://${node}:${llamaPort}`;
-          console.log(`LLaMA server expected at ${llamaUrl}`);
+          const url = `http://${node}:${llamaPort}`;
+          console.log(`LLaMA server expected at ${url}`);
+          log(`Job ${jobId} running on ${node}`);
           clearInterval(interval);
+          if (cb) cb(url);
         }
       }
     });
@@ -58,35 +81,58 @@ function pollForNode(jobId) {
   check();
 }
 
-let slurmJobId = null;
-let llamaUrl = config.llamaServerUrl;
 const llamaPort = config.llamaServerPort;
 
 app.prepare().then(() => {
   const server = express();
 
+  server.use(session({
+    secret: 'ood_llm_secret',
+    resave: false,
+    saveUninitialized: true,
+  }));
   server.use(express.json());
 
   server.post(`${baseUri}launch`, async (req, res) => {
-    if (slurmJobId) {
-      return res.json({ jobId: slurmJobId });
+    const sid = req.sessionID;
+    const info = sessionJobs[sid];
+    if (info && info.jobId) {
+      startTimer(sid);
+      return res.json({ jobId: info.jobId });
     }
     try {
-      slurmJobId = await launchSlurmJob();
-      pollForNode(slurmJobId);
-      res.json({ jobId: slurmJobId });
+      const jobId = await launchSlurmJob();
+      sessionJobs[sid] = { jobId };
+      startTimer(sid);
+      pollForNode(jobId, url => {
+        sessionJobs[sid].url = url;
+      });
+      log(`Launched job ${jobId} for session ${sid}`);
+      res.json({ jobId });
     } catch (err) {
       console.error(err);
       res.status(500).json({ error: err.message });
     }
   });
 
+  server.post(`${baseUri}keepalive`, (req, res) => {
+    startTimer(req.sessionID);
+    res.end();
+  });
+
+  server.post(`${baseUri}end`, (req, res) => {
+    cancelJob(req.sessionID);
+    res.end();
+  });
+
   server.use(`${baseUri}api`, (req, res, next) => {
-    if (!llamaUrl) {
+    const info = sessionJobs[req.sessionID];
+    if (!info || !info.url) {
       return res.status(503).send('LLaMA server not ready');
     }
+    startTimer(req.sessionID);
     return createProxyMiddleware({
-      target: llamaUrl,
+      target: info.url,
       changeOrigin: true,
       pathRewrite: path => path.replace(new RegExp(`^${baseUri}api`), ''),
     })(req, res, next);

@@ -5,6 +5,7 @@ const config = {
   slurmPartition: process.env.SLURM_PARTITION || 'gpu',
   gpuType: process.env.GPU_TYPE || 'gpu:1',
   llamaArgs: process.env.LLAMA_ARGS || '',
+  sessionTimeout: parseInt(process.env.SESSION_TIMEOUT, 10) || 600,
 };
 
 module.exports = config;
