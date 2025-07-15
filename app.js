@@ -2,12 +2,27 @@ const express = require('express');
 const next    = require('next');
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const session = require('express-session');
 
 const log = require('./logger');
 
 const config = require('./config');
+
+// Ensure runtime baseUri matches value used during build
+try {
+  const metaPath = path.join(__dirname, '.next', 'build-meta.json');
+  const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+  if (meta.baseUri && meta.baseUri !== config.baseUri) {
+    console.error(
+      `PASSENGER_BASE_URI mismatch: built with ${meta.baseUri} but running with ${config.baseUri}. Rebuild with the correct value.`
+    );
+    process.exit(1);
+  }
+} catch (err) {
+  // Ignore if meta file missing
+}
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
