@@ -1,1 +1,14 @@
 node_modules/
+# Local environment files
+.env.local
+
+# Log files
+app.log
+*.log
+
+# Build output
+.next/
+coverage/
+build/
+dist/
+
