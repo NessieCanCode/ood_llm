@@ -10,8 +10,9 @@ This repository contains a small [Next.js](https://nextjs.org/) passenger app us
 
 ## Running locally
 1. `npm install`
-2. `npm run dev`
-3. Open <http://localhost:3000> to view the demo page
+2. Copy `.env.example` to `.env.local` and edit values if needed
+3. `npm run dev`
+4. Open <http://localhost:3000> to view the demo page
 
 ## Deploying on Open OnDemand
 1. Copy this repository to your OOD development apps directory, for example:
@@ -40,6 +41,7 @@ Several environment variables control how the Slurm job is launched. All have sa
 | `SLURM_PARTITION` | `gpu` | Slurm partition used when submitting the job |
 | `GPU_TYPE` | `gpu:1` | `--gres` value specifying the GPU resource requirement |
 | `PASSENGER_BASE_URI` | `/` | Base URI where the app is mounted |
+| `NEXT_PUBLIC_BASE_URI` | `/` | Same as above, exposed to the browser |
 | `LLAMA_CPP_BIN` | `/path/to/llama.cpp/server` | Path to the `llama.cpp` server executable |
 | `MODEL` | `/path/to/models/llama-7b.gguf` | GGUF model file to load |
 | `LLAMA_ARGS` | *(empty)* | Extra command line arguments passed to `llama.cpp` |
@@ -55,6 +57,12 @@ export MODEL=/software/models/llama-7b.gguf
 export LLAMA_ARGS="--n-gpu-layers 40"
 export LLAMA_SERVER_PORT=8001
 ```
+
+### Build-time environment injection
+Values in `.env.example` are used as a template for `.env.local`. During
+`npm run build` the script `scripts/generateEnv.js` writes a fresh `.env.local`
+using any matching variables from your shell environment. This allows sensitive
+values to be injected without committing them to the repository.
 
 ## Basic usage
 1. Launch the **ood_llm** app from the OOD dashboard.

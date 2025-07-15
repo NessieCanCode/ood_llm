@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 
+const base = (process.env.NEXT_PUBLIC_BASE_URI || '/').replace(/\/?$/, '/');
+
 export default function Chat() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
@@ -7,11 +9,11 @@ export default function Chat() {
 
   useEffect(() => {
     // Kick off the Slurm job if needed
-    fetch('/launch', { method: 'POST' }).catch(() => {});
+    fetch(`${base}launch`, { method: 'POST' }).catch(() => {});
     const keep = setInterval(() => {
-      fetch('/keepalive', { method: 'POST' }).catch(() => {});
+      fetch(`${base}keepalive`, { method: 'POST' }).catch(() => {});
     }, 30000);
-    const end = () => navigator.sendBeacon('/end');
+    const end = () => navigator.sendBeacon(`${base}end`);
     window.addEventListener('beforeunload', end);
     return () => {
       clearInterval(keep);
@@ -32,7 +34,7 @@ export default function Chat() {
     setInput('');
 
     try {
-      const res = await fetch('/api/completion', {
+      const res = await fetch(`${base}api/completion`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })

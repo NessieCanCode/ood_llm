@@ -1,5 +1,10 @@
+require('dotenv').config({ path: '.env.local' });
+
+const baseUri = (process.env.PASSENGER_BASE_URI || '/').replace(/\/?$/, '/');
+process.env.NEXT_PUBLIC_BASE_URI = process.env.NEXT_PUBLIC_BASE_URI || baseUri;
+
 const config = {
-  baseUri: process.env.PASSENGER_BASE_URI || '/',
+  baseUri,
   llamaServerUrl: process.env.LLAMA_SERVER_URL || null,
   llamaServerPort: process.env.LLAMA_SERVER_PORT || 8000,
   slurmPartition: process.env.SLURM_PARTITION || 'gpu',
