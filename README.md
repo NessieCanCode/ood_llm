@@ -19,10 +19,11 @@ This repository contains a small [Next.js](https://nextjs.org/) passenger app us
    ```bash
    cp -r ood_llm ~/ondemand/dev/ood_llm
    ```
-2. From a shell on the OOD host install dependencies:
+2. From a shell on the OOD host install dependencies **and build the production bundle**:
    ```bash
    cd ~/ondemand/dev/ood_llm
    npm install --production
+   npm run build
    ```
 3. Visit **My Sandbox Apps** on the OOD dashboard and choose **ood_llm** then **Develop**. Passenger will start `node app.js` for you and mount it under `/pun/dev/ood_llm`.
 
