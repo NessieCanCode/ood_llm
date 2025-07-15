@@ -24,6 +24,7 @@ This repository contains a small [Next.js](https://nextjs.org/) passenger app us
    npm install --production
    ```
 3. Visit **My Sandbox Apps** on the OOD dashboard and choose **ood_llm** then **Develop**. Passenger will start `node app.js` for you and mount it under `/pun/dev/ood_llm`.
+4. If the app is mounted under a different subpath, set `PASSENGER_BASE_URI` to that path before running `npm run build` so static assets load correctly.
 
 ## Launching the LLaMA.cpp server with Slurm
 The front end expects an instance of `llama.cpp` started in server mode. An example interactive job might be:
