@@ -141,7 +141,10 @@ app.prepare().then(() => {
   // Mount under the base URI
   server.use(baseUri, (req, res) => {
     // Strip off the base path before handing to Next
-    req.url = req.url.replace(new RegExp(`^${baseUri}`), '') || '/';
+    const stripped = baseUri === '/'
+      ? req.url
+      : req.url.replace(new RegExp(`^${baseUri}`), '') || '/';
+    req.url = stripped;
     return handle(req, res);
   });
 
