@@ -55,10 +55,13 @@ function cancelJob(sid) {
     log(`Cancelled job ${info.jobId} for session ${sid}`);
   }
   if (info && info.timer) clearTimeout(info.timer);
+  if (info && info.interval) clearInterval(info.interval);
   delete sessionJobs[sid];
 }
 
-function pollForNode(jobId, cb) {
+function pollForNode(jobId, sid, cb) {
+  const info = sessionJobs[sid];
+  if (!info) return;
   let interval;
   const check = () => {
     const squeue = spawn('squeue', ['-j', jobId, '-h', '-o', '%B']);
@@ -72,12 +75,14 @@ function pollForNode(jobId, cb) {
           console.log(`LLaMA server expected at ${url}`);
           log(`Job ${jobId} running on ${node}`);
           clearInterval(interval);
+          delete info.interval;
           if (cb) cb(url);
         }
       }
     });
   };
   interval = setInterval(check, 5000);
+  info.interval = interval;
   check();
 }
 
@@ -109,7 +114,7 @@ app.prepare().then(() => {
       const jobId = await launchSlurmJob();
       sessionJobs[sid] = { jobId };
       startTimer(sid);
-      pollForNode(jobId, url => {
+      pollForNode(jobId, sid, url => {
         sessionJobs[sid].url = url;
       });
       log(`Launched job ${jobId} for session ${sid}`);
