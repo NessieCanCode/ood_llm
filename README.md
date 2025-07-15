@@ -68,3 +68,11 @@ export LLAMA_SERVER_PORT=8001
 4. Navigate to the app URL; enter a prompt and submit it to get a response from the LLaMA server.
 
 This setup allows users to interact with large language models through the comfort of a web browser while leveraging their institution's HPC resources.
+
+## Development workflow
+Run the linter and unit tests before submitting changes:
+```bash
+cd nextjs
+npm run lint
+npm test
+```
