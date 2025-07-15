@@ -1,3 +1,5 @@
+require('dotenv').config({ path: '.env.local' });
+
 const config = {
   baseUri: process.env.PASSENGER_BASE_URI || '/',
   llamaServerUrl: process.env.LLAMA_SERVER_URL || null,
