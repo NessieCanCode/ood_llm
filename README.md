@@ -62,8 +62,11 @@ export LLAMA_SERVER_URL=http://login.example.com:8001
 ### Build-time environment injection
 Values in `.env.example` are used as a template for `.env.local`. During
 `npm run build` the script `scripts/generateEnv.js` writes a fresh `.env.local`
-using any matching variables from your shell environment. This allows sensitive
-values to be injected without committing them to the repository.
+using any matching variables from your shell environment. **`PASSENGER_BASE_URI`
+must be set before running the build.** The build stores this value in
+`.next/build-meta.json` and the server will refuse to start if the runtime value
+differs. This allows sensitive values to be injected without committing them to
+the repository and prevents accidental reuse of stale builds.
 
 ## Basic usage
 1. Launch the **ood_llm** app from the OOD dashboard.
