@@ -8,6 +8,16 @@ export default function Chat() {
   useEffect(() => {
     // Kick off the Slurm job if needed
     fetch('/launch', { method: 'POST' }).catch(() => {});
+    const keep = setInterval(() => {
+      fetch('/keepalive', { method: 'POST' }).catch(() => {});
+    }, 30000);
+    const end = () => navigator.sendBeacon('/end');
+    window.addEventListener('beforeunload', end);
+    return () => {
+      clearInterval(keep);
+      window.removeEventListener('beforeunload', end);
+      end();
+    };
   }, []);
 
   useEffect(() => {
