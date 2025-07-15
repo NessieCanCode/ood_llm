@@ -9,15 +9,14 @@ This repository contains a small [Next.js](https://nextjs.org/) passenger app us
 * A compute node with at least one GPU (16&nbsp;GB VRAM recommended) or a high core-count CPU node
 
 ## Running locally
-1. `cd nextjs`
-2. `npm install`
-3. `npm run dev`
-4. Open <http://localhost:3000> to view the demo page
+1. `npm install`
+2. `npm run dev`
+3. Open <http://localhost:3000> to view the demo page
 
 ## Deploying on Open OnDemand
-1. Copy the `nextjs` directory to your OOD development apps directory, for example:
+1. Copy this repository to your OOD development apps directory, for example:
    ```bash
-   cp -r nextjs ~/ondemand/dev/ood_llm
+   cp -r ood_llm ~/ondemand/dev/ood_llm
    ```
 2. From a shell on the OOD host install dependencies:
    ```bash
@@ -72,7 +71,6 @@ This setup allows users to interact with large language models through the comfo
 ## Development workflow
 Run the linter and unit tests before submitting changes:
 ```bash
-cd nextjs
 npm run lint
 npm test
 ```
