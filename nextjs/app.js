@@ -4,16 +4,25 @@ const { spawn } = require('child_process');
 const path = require('path');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
+const config = require('./config');
+
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
-const baseUri = process.env.PASSENGER_BASE_URI || '/';
+const baseUri = config.baseUri;
 
 async function launchSlurmJob() {
   return new Promise((resolve, reject) => {
     const scriptPath = path.join(__dirname, 'scripts', 'run_llama.sh');
-    const sbatch = spawn('sbatch', [scriptPath]);
+    const env = {
+      ...process.env,
+      SLURM_PARTITION: config.slurmPartition,
+      GPU_TYPE: config.gpuType,
+      LLAMA_ARGS: config.llamaArgs,
+      PORT: config.llamaServerPort,
+    };
+    const sbatch = spawn('sbatch', [scriptPath], { env });
     let output = '';
     sbatch.stdout.on('data', d => output += d.toString());
     sbatch.stderr.on('data', d => console.error('sbatch:', d.toString()));
@@ -50,8 +59,8 @@ function pollForNode(jobId) {
 }
 
 let slurmJobId = null;
-let llamaUrl = process.env.LLAMA_SERVER_URL || null;
-const llamaPort = process.env.LLAMA_SERVER_PORT || 8000;
+let llamaUrl = config.llamaServerUrl;
+const llamaPort = config.llamaServerPort;
 
 app.prepare().then(() => {
   const server = express();

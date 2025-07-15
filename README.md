@@ -42,6 +42,24 @@ export LLAMA_SERVER_URL=http://node123:8000
 ```
 Passenger passes environment variables through to `app.js`, which can read `process.env.LLAMA_SERVER_URL` to forward requests.
 
+### Runtime configuration
+Several environment variables control how the Slurm job is launched. All have sane defaults and are optional:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `SLURM_PARTITION` | `gpu` | Slurm partition used when submitting the job |
+| `GPU_TYPE` | `gpu:1` | `--gres` value specifying the GPU resource requirement |
+| `LLAMA_ARGS` | *(empty)* | Extra command line arguments passed to `llama.cpp` |
+| `LLAMA_SERVER_PORT` | `8000` | Port the server listens on |
+
+These can be set in your shell before launching the app:
+```bash
+export SLURM_PARTITION=debug
+export GPU_TYPE=gpu:a100:1
+export LLAMA_ARGS="--n-gpu-layers 40"
+export LLAMA_SERVER_PORT=8001
+```
+
 ## Basic usage
 1. Start the Slurm job running `llama.cpp` as shown above.
 2. Set `LLAMA_SERVER_URL` in your environment.
