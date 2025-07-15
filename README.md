@@ -26,20 +26,11 @@ This repository contains a small [Next.js](https://nextjs.org/) passenger app us
 3. Visit **My Sandbox Apps** on the OOD dashboard and choose **ood_llm** then **Develop**. Passenger will start `node app.js` for you and mount it under `/pun/dev/ood_llm`.
 
 ## Launching the LLaMA.cpp server with Slurm
-The front end expects an instance of `llama.cpp` started in server mode. An example interactive job might be:
-```bash
-salloc -N1 -c 32 --gres=gpu:1 --mem=64G -t 02:00:00
-module load cuda
-/path/to/llama.cpp/server -m /path/to/models/llama-7b --port 8000
-```
-Adjust the resources to match your model size. The job should remain running so the passenger app can connect. Note the node name (e.g. `node123`) where the server is started.
-
-## Connecting the passenger app
-Before launching the OOD app, set the following environment variable so the front end knows where to reach the backend:
-```bash
-export LLAMA_SERVER_URL=http://node123:8000
-```
-Passenger passes environment variables through to `app.js`, which can read `process.env.LLAMA_SERVER_URL` to forward requests.
+When a user visits the web interface the application automatically submits a Slurm job
+using the `scripts/run_llama.sh` script.  The script starts
+`llama.cpp` in server mode on the allocated node.  Edit the script or set the
+environment variables below so it can locate your built `llama.cpp` binary and
+model file.
 
 ### Runtime configuration
 Several environment variables control how the Slurm job is launched. All have sane defaults and are optional:
@@ -48,23 +39,27 @@ Several environment variables control how the Slurm job is launched. All have sa
 | --- | --- | --- |
 | `SLURM_PARTITION` | `gpu` | Slurm partition used when submitting the job |
 | `GPU_TYPE` | `gpu:1` | `--gres` value specifying the GPU resource requirement |
+| `PASSENGER_BASE_URI` | `/` | Base URI where the app is mounted |
+| `LLAMA_CPP_BIN` | `/path/to/llama.cpp/server` | Path to the `llama.cpp` server executable |
+| `MODEL` | `/path/to/models/llama-7b.gguf` | GGUF model file to load |
 | `LLAMA_ARGS` | *(empty)* | Extra command line arguments passed to `llama.cpp` |
 | `LLAMA_SERVER_PORT` | `8000` | Port the server listens on |
 | `SESSION_TIMEOUT` | `600` | Seconds of inactivity before the job is cancelled |
 
-These can be set in your shell before launching the app:
+Set any of these variables in your shell before launching the app:
 ```bash
 export SLURM_PARTITION=debug
 export GPU_TYPE=gpu:a100:1
+export LLAMA_CPP_BIN=/software/llama.cpp/server
+export MODEL=/software/models/llama-7b.gguf
 export LLAMA_ARGS="--n-gpu-layers 40"
 export LLAMA_SERVER_PORT=8001
 ```
 
 ## Basic usage
-1. Start the Slurm job running `llama.cpp` as shown above.
-2. Set `LLAMA_SERVER_URL` in your environment.
-3. Launch the **ood_llm** app from the OOD dashboard.
-4. Navigate to the app URL; enter a prompt and submit it to get a response from the LLaMA server.
+1. Launch the **ood_llm** app from the OOD dashboard.
+2. Visit the app URL. Opening the page submits the Slurm job automatically and connects once `llama.cpp` is ready.
+3. Enter a prompt in the chat box to interact with the model.
 
 This setup allows users to interact with large language models through the comfort of a web browser while leveraging their institution's HPC resources.
 
