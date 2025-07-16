@@ -10,6 +10,12 @@ const log = require('./logger');
 
 const config = require('./config');
 
+// Phusion Passenger sets PASSENGER_APP_ENV instead of NODE_ENV
+// Map it so libraries relying on NODE_ENV behave correctly
+if (!process.env.NODE_ENV && process.env.PASSENGER_APP_ENV) {
+  process.env.NODE_ENV = process.env.PASSENGER_APP_ENV;
+}
+
 // Ensure runtime baseUri matches value used during build
 try {
   const metaPath = path.join(__dirname, '.next', 'build-meta.json');
