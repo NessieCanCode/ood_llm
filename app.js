@@ -41,6 +41,7 @@ const app = next({ dev });
 const handle = app.getRequestHandler();
 
 const baseUri = config.baseUri;
+const prefix = baseUri.replace(/\/$/, '');
 const escapeRegex = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const sessionJobs = {};
 
@@ -128,7 +129,7 @@ app.prepare().then(() => {
   }));
   server.use(express.json());
 
-  server.post(`${baseUri}launch`, async (req, res) => {
+  server.post(`${prefix}/launch`, async (req, res) => {
     const sid = req.sessionID;
     const info = sessionJobs[sid];
     if (info && (info.jobId || info.url)) {
@@ -155,17 +156,17 @@ app.prepare().then(() => {
     }
   });
 
-  server.post(`${baseUri}keepalive`, (req, res) => {
+  server.post(`${prefix}/keepalive`, (req, res) => {
     startTimer(req.sessionID);
     res.end();
   });
 
-  server.post(`${baseUri}end`, (req, res) => {
+  server.post(`${prefix}/end`, (req, res) => {
     cancelJob(req.sessionID);
     res.end();
   });
 
-  server.use(`${baseUri}api`, (req, res, next) => {
+  server.use(`${prefix}/api`, (req, res, next) => {
     const info = sessionJobs[req.sessionID];
     if (!info || !info.url) {
       return res.status(503).send('LLaMA server not ready');
@@ -174,7 +175,7 @@ app.prepare().then(() => {
     return createProxyMiddleware({
       target: info.url,
       changeOrigin: true,
-      pathRewrite: path => path.replace(new RegExp(`^${escapeRegex(baseUri)}api`), ''),
+      pathRewrite: path => path.replace(new RegExp(`^${escapeRegex(prefix)}/api`), ''),
     })(req, res, next);
   });
 
