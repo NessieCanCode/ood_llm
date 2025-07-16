@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>RufusAI</title>
+  <link rel="stylesheet" href="RufusAI/styles.css">
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/javascript">
+    const { useState, useEffect, useRef } = React;
+
+    function Chat() {
+      const [messages, setMessages] = useState([]);
+      const [input, setInput] = useState('');
+      const messagesEndRef = useRef(null);
+
+      useEffect(() => {
+        fetch('launch', { method: 'POST' }).catch(() => {});
+        const keep = setInterval(() => {
+          fetch('keepalive', { method: 'POST' }).catch(() => {});
+        }, 30000);
+        const end = () => navigator.sendBeacon('end');
+        window.addEventListener('beforeunload', end);
+        return () => {
+          clearInterval(keep);
+          window.removeEventListener('beforeunload', end);
+          end();
+        };
+      }, []);
+
+      useEffect(() => {
+        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+      }, [messages]);
+
+      async function sendMessage() {
+        if (!input.trim()) return;
+        const userMsg = { role: 'user', content: input };
+        setMessages(prev => [...prev, userMsg]);
+        const prompt = input;
+        setInput('');
+        try {
+          const res = await fetch('api/completion', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ prompt })
+          });
+          if (!res.ok) throw new Error(await res.text());
+          const text = await res.text();
+          setMessages(prev => [...prev, { role: 'assistant', content: text }]);
+        } catch (err) {
+          const msg = err.message.includes('LLaMA server not ready')
+            ? 'Server is starting, please wait...'
+            : 'Error: ' + err.message;
+          setMessages(prev => [...prev, { role: 'assistant', content: msg }]);
+        }
+      }
+
+      function handleKeyDown(e) {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          sendMessage();
+        }
+      }
+
+      return (
+        React.createElement('div', { className: 'chat-container' },
+          React.createElement('div', { className: 'messages' },
+            messages.map((m, i) => (
+              React.createElement('div', { key: i, className: `message ${m.role}` }, m.content)
+            )),
+            React.createElement('div', { ref: messagesEndRef })
+          ),
+          React.createElement('div', { className: 'input-area' },
+            React.createElement('input', {
+              type: 'text',
+              placeholder: 'Send a message',
+              value: input,
+              onChange: e => setInput(e.target.value),
+              onKeyDown: handleKeyDown
+            }),
+            React.createElement('button', { onClick: sendMessage }, 'Send')
+          )
+        )
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(Chat));
+  </script>
+</body>
+</html>
