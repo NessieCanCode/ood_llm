@@ -7,7 +7,6 @@ app.log
 *.log
 
 # Build output
-.next/
 coverage/
 build/
 dist/
