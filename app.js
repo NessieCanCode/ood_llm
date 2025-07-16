@@ -1,6 +1,6 @@
 const express = require('express');
 const next    = require('next');
-const { spawn } = require('child_process');
+const { spawn, execSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const { createProxyMiddleware } = require('http-proxy-middleware');
@@ -25,6 +25,18 @@ try {
 }
 
 const dev = process.env.NODE_ENV !== 'production';
+if (!dev) {
+  const buildDir = path.join(__dirname, '.next');
+  if (!fs.existsSync(buildDir)) {
+    console.log('No production build found. Running "npm run build"...');
+    try {
+      execSync('npm run build', { stdio: 'inherit' });
+    } catch (err) {
+      console.error('Failed to build application');
+      process.exit(1);
+    }
+  }
+}
 const app = next({ dev });
 const handle = app.getRequestHandler();
 
