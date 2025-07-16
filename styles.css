@@ -63,3 +63,5 @@ body {
 .input-area button:hover {
   background-color: #0e8c6b;
 }
+
+.not-found { text-align: center; padding-top: 2rem; font-size: 1.2rem; }

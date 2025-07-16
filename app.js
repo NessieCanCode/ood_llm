@@ -29,6 +29,7 @@ const app = next({ dev });
 const handle = app.getRequestHandler();
 
 const baseUri = config.baseUri;
+const escapeRegex = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const sessionJobs = {};
 
 async function launchSlurmJob() {
@@ -82,6 +83,7 @@ function pollForNode(jobId, sid, cb) {
     const squeue = spawn('squeue', ['-j', jobId, '-h', '-o', '%B']);
     let out = '';
     squeue.stdout.on('data', d => out += d.toString());
+    squeue.on('error', err => console.error('squeue error:', err));
     squeue.on('close', code => {
       if (code === 0) {
         const node = out.trim();
@@ -107,9 +109,10 @@ app.prepare().then(() => {
   const server = express();
 
   server.use(session({
-    secret: 'ood_llm_secret',
+    secret: config.sessionSecret,
     resave: false,
     saveUninitialized: true,
+    cookie: { maxAge: config.sessionTimeout * 1000 },
   }));
   server.use(express.json());
 
@@ -159,7 +162,7 @@ app.prepare().then(() => {
     return createProxyMiddleware({
       target: info.url,
       changeOrigin: true,
-      pathRewrite: path => path.replace(new RegExp(`^${baseUri}api`), ''),
+      pathRewrite: path => path.replace(new RegExp(`^${escapeRegex(baseUri)}api`), ''),
     })(req, res, next);
   });
 
@@ -168,13 +171,16 @@ app.prepare().then(() => {
     // Strip off the base path before handing to Next
     const stripped = baseUri === '/'
       ? req.url
-      : req.url.replace(new RegExp(`^${baseUri}`), '') || '/';
+      : req.url.replace(new RegExp(`^${escapeRegex(baseUri)}`), '') || '/';
     req.url = stripped;
     return handle(req, res);
   });
 
   const port = process.env.PORT || 3000;
   server.listen(port, () => {
-    console.log(`> Next.js app listening on ${baseUri} (port ${port})`);
+    const msg = `Next.js app listening on ${baseUri} (port ${port})`;
+    console.log(`> ${msg}`);
+    log(msg);
   });
 });
+
