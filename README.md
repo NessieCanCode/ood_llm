@@ -48,6 +48,8 @@ Several environment variables control how the Slurm job is launched. All have sa
 | `LLAMA_ARGS` | *(empty)* | Extra command line arguments passed to `llama.cpp` |
 | `LLAMA_SERVER_PORT` | `8000` | Port the server listens on |
 | `SESSION_TIMEOUT` | `600` | Seconds of inactivity before the job is cancelled |
+| `SESSION_SECRET` | `ood_llm_secret` | Express session secret |
+| `LOG_FILE` | `./app.log` | Path to server log file |
 
 Set any of these variables in your shell before launching the app:
 ```bash
@@ -73,6 +75,7 @@ the repository and prevents accidental reuse of stale builds.
 1. Launch the **ood_llm** app from the OOD dashboard.
 2. Visit the app URL. Opening the page submits the Slurm job automatically and connects once `llama.cpp` is ready.
 3. Enter a prompt in the chat box to interact with the model.
+4. Invalid URLs will show a simple 404 page.
 
 This setup allows users to interact with large language models through the comfort of a web browser while leveraging their institution's HPC resources.
 

@@ -37,10 +37,15 @@ export default function Chat() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt })
       });
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
       const text = await res.text();
       setMessages(prev => [...prev, { role: 'assistant', content: text }]);
     } catch (err) {
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Error: ' + err.message }]);
+      const msg = err.message.includes('LLaMA server not ready') ?
+        'Server is starting, please wait...' : 'Error: ' + err.message;
+      setMessages(prev => [...prev, { role: 'assistant', content: msg }]);
     }
   };
 
@@ -72,3 +77,4 @@ export default function Chat() {
     </div>
   );
 }
+
