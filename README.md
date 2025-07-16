@@ -1,6 +1,6 @@
 # RufusAI Passenger App
 
-This repository contains a small [Next.js](https://nextjs.org/) passenger app used to provide a web front end for a running [LLaMA.cpp](https://github.com/ggerganov/llama.cpp) server. It is designed to be deployed on [Open OnDemand](https://openondemand.org/) so users can launch interactive LLM sessions through a browser.
+This repository contains a small Express passenger app used to provide a web front end for a running [LLaMA.cpp](https://github.com/ggerganov/llama.cpp) server. It is designed to be deployed on [Open OnDemand](https://openondemand.org/) so users can launch interactive LLM sessions through a browser.
 
 ## Requirements
 * Node.js 18 or newer
@@ -19,17 +19,13 @@ This repository contains a small [Next.js](https://nextjs.org/) passenger app us
    ```bash
    cp -r ood_llm ~/ondemand/dev/ood_llm
    ```
-2. From a shell on the OOD host install dependencies **and build the production bundle**:
+2. From a shell on the OOD host install dependencies **and generate the environment file**:
    ```bash
    cd ~/ondemand/dev/ood_llm
    npm install --production
    npm run build
    ```
-3. Build the Next.js application:
-   ```bash
-   npm run build
-   ```
-4. Visit **My Sandbox Apps** on the OOD dashboard and choose **ood_llm** then **Develop**. Passenger will start `node app.js` for you and mount it under `/pun/dev/ood_llm`.
+3. Visit **My Sandbox Apps** on the OOD dashboard and choose **ood_llm** then **Develop**. Passenger will start `node app.js` for you and mount it under `/pun/dev/ood_llm`.
 
 ## Launching the LLaMA.cpp server with Slurm
 When a user visits the web interface the application automatically submits a Slurm job
@@ -70,10 +66,9 @@ export LLAMA_SERVER_URL=http://login.example.com:8001
 Values in `.env.example` are used as a template for `.env.local`. During
 `npm run build` the script `scripts/generateEnv.js` writes a fresh `.env.local`
 using any matching variables from your shell environment. **`PASSENGER_BASE_URI`
-must be set before running the build.** The build stores this value in
-`.next/build-meta.json` and the server will refuse to start if the runtime value
-differs. This allows sensitive values to be injected without committing them to
-the repository and prevents accidental reuse of stale builds.
+must be set before running the build.** This allows sensitive values to be
+injected without committing them to the repository and prevents accidental reuse
+of stale files.
 
 ## Basic usage
 1. Launch the **ood_llm** app from the OOD dashboard.
