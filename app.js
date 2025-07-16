@@ -9,6 +9,9 @@ const config = require('./config');
 
 const app = express();
 const router = express.Router();
+if (config.baseUri && !config.baseUri.endsWith('/')) {
+  app.get(config.baseUri, (req, res) => res.redirect(config.baseUri + '/'));
+}
 app.use(config.baseUri || '/', router);
 
 const sessionJobs = {};
