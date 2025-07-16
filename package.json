@@ -4,7 +4,7 @@
   "main": "app.js",
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/generateEnv.js && next build",
+    "build": "next build",
     "start": "NODE_ENV=production node app.js",
     "lint": "eslint .",
     "test": "jest"
