@@ -41,7 +41,7 @@ const app = next({ dev });
 const handle = app.getRequestHandler();
 
 const baseUri = config.baseUri;
-const escapeRegex = str => str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const router = express.Router();
 const sessionJobs = {};
 
 async function launchSlurmJob() {
@@ -127,8 +127,9 @@ app.prepare().then(() => {
     cookie: { maxAge: config.sessionTimeout * 1000 },
   }));
   server.use(express.json());
+  server.use(process.env.PASSENGER_BASE_URI || '/', router);
 
-  server.post(`${baseUri}launch`, async (req, res) => {
+  router.post('/launch', async (req, res) => {
     const sid = req.sessionID;
     const info = sessionJobs[sid];
     if (info && (info.jobId || info.url)) {
@@ -155,17 +156,17 @@ app.prepare().then(() => {
     }
   });
 
-  server.post(`${baseUri}keepalive`, (req, res) => {
+  router.post('/keepalive', (req, res) => {
     startTimer(req.sessionID);
     res.end();
   });
 
-  server.post(`${baseUri}end`, (req, res) => {
+  router.post('/end', (req, res) => {
     cancelJob(req.sessionID);
     res.end();
   });
 
-  server.use(`${baseUri}api`, (req, res, next) => {
+  router.use('/api', (req, res, next) => {
     const info = sessionJobs[req.sessionID];
     if (!info || !info.url) {
       return res.status(503).send('LLaMA server not ready');
@@ -174,19 +175,12 @@ app.prepare().then(() => {
     return createProxyMiddleware({
       target: info.url,
       changeOrigin: true,
-      pathRewrite: path => path.replace(new RegExp(`^${escapeRegex(baseUri)}api`), ''),
+      pathRewrite: path => path.replace(/^\/api/, ''),
     })(req, res, next);
   });
 
-  // Mount under the base URI
-  server.use(baseUri, (req, res) => {
-    // Strip off the base path before handing to Next
-    const stripped = baseUri === '/'
-      ? req.url
-      : req.url.replace(new RegExp(`^${escapeRegex(baseUri)}`), '') || '/';
-    req.url = stripped;
-    return handle(req, res);
-  });
+  // Mount Next.js under the router
+  router.use((req, res) => handle(req, res));
 
   const port = process.env.PORT || 3000;
   server.listen(port, () => {
