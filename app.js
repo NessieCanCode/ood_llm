@@ -1,6 +1,8 @@
 const express = require('express');
 const { spawn } = require('child_process');
 const path = require('path');
+const fs = require('fs');
+const http = require('http');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 const session = require('express-session');
 
@@ -15,7 +17,6 @@ if (config.baseUri && !config.baseUri.endsWith('/')) {
 app.use(config.baseUri || '/', router);
 
 const sessionJobs = {};
-const llamaPort = config.llamaServerPort;
 
 async function launchSlurmJob() {
   return new Promise((resolve, reject) => {
@@ -25,7 +26,6 @@ async function launchSlurmJob() {
       SLURM_PARTITION: config.slurmPartition,
       GPU_TYPE: config.gpuType,
       LLAMA_ARGS: config.llamaArgs,
-      PORT: config.llamaServerPort,
     };
     const sbatch = spawn('sbatch', [scriptPath], { env });
     let output = '';
@@ -60,28 +60,57 @@ function cancelJob(sid) {
   delete sessionJobs[sid];
 }
 
-function pollForNode(jobId, sid, cb) {
+async function testConnection(url) {
+  return new Promise(resolve => {
+    const req = http.get(url, () => {
+      req.destroy();
+      resolve(true);
+    });
+    req.on('error', () => resolve(false));
+  });
+}
+
+function pollForStatus(jobId, sid) {
   const info = sessionJobs[sid];
   if (!info) return;
+  const logFile = path.join(__dirname, `llama_${jobId}.log`);
   let interval;
   const check = () => {
-    const squeue = spawn('squeue', ['-j', jobId, '-h', '-o', '%B']);
-    let out = '';
-    squeue.stdout.on('data', d => (out += d.toString()));
-    squeue.on('error', err => console.error('squeue error:', err));
-    squeue.on('close', code => {
-      if (code === 0) {
-        const node = out.trim();
-        if (node) {
-          const url = `http://${node}:${llamaPort}`;
-          console.log(`LLaMA server expected at ${url}`);
-          log(`Job ${jobId} running on ${node}`);
+    if (fs.existsSync(logFile)) {
+      const data = fs.readFileSync(logFile, 'utf8');
+      if (!info.port) {
+        const m = data.match(/PORT=(\d+)/);
+        if (m) info.port = parseInt(m[1], 10);
+      }
+      if (!info.host) {
+        const m = data.match(/HOST=([A-Za-z0-9_.-]+)/);
+        if (m) info.host = m[1];
+      }
+    }
+
+    if (!info.host) {
+      const squeue = spawn('squeue', ['-j', jobId, '-h', '-o', '%B']);
+      let out = '';
+      squeue.stdout.on('data', d => (out += d.toString()));
+      squeue.on('close', code => {
+        if (code === 0 && out.trim()) info.host = out.trim();
+      });
+    }
+
+    if (info.host && info.port && !info.url) {
+      info.url = `http://${info.host}:${info.port}`;
+      log(`Job ${jobId} running on ${info.host}:${info.port}`);
+    }
+
+    if (info.url && !info.connected) {
+      testConnection(info.url).then(ok => {
+        if (ok) {
+          info.connected = true;
           clearInterval(interval);
           delete info.interval;
-          if (cb) cb(url);
         }
-      }
-    });
+      });
+    }
   };
   interval = setInterval(check, 5000);
   info.interval = interval;
@@ -112,15 +141,22 @@ router.post('/launch', async (req, res) => {
     const jobId = await launchSlurmJob();
     sessionJobs[sid] = { jobId };
     startTimer(sid);
-    pollForNode(jobId, sid, url => {
-      sessionJobs[sid].url = url;
-    });
+    pollForStatus(jobId, sid);
     log(`Launched job ${jobId} for session ${sid}`);
     res.json({ jobId });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: err.message });
   }
+});
+
+router.get('/status', (req, res) => {
+  const info = sessionJobs[req.sessionID] || {};
+  res.json({
+    jobId: info.jobId || null,
+    running: !!info.url,
+    connected: !!info.connected,
+  });
 });
 
 router.post('/keepalive', (req, res) => {

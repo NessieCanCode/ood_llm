@@ -72,7 +72,9 @@ of stale files.
 
 ## Basic usage
 1. Launch the **ood_llm** app from the OOD dashboard.
-2. Visit the app URL. Opening the page submits the Slurm job automatically and connects once `llama.cpp` is ready.
+2. Visit the app URL. A loading page appears while the Slurm job launches.
+   Each step is checked off once the job starts, begins running and the socket
+   is reachable. When all are complete the chat interface loads automatically.
 3. Enter a prompt in the chat box to interact with the model.
 4. Invalid URLs will show a simple 404 page.
 
